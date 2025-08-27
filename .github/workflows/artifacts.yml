@@ -54,7 +54,6 @@ jobs:
       fail-fast: false
       matrix:
         source_branch: [sdk2013-sp, sdk2013-mp, gmod]
-        arch: [x86, x86_64]
 
     runs-on: ubuntu-latest
     container: debian:bullseye
@@ -64,11 +63,7 @@ jobs:
       run: |
         dpkg --add-architecture i386
         apt update
-        if [ "${{ matrix.arch }}" = "x86" ]; then
-          apt install -y build-essential git libstdc++6:i386 gcc-multilib g++-multilib
-        else
-          apt install -y build-essential git
-        fi
+        apt install -y build-essential git libstdc++6:i386 gcc-multilib g++-multilib
 
     - name: Checkout Mini Source SDK
       uses: actions/checkout@v4
@@ -81,25 +76,19 @@ jobs:
         path: ${{ matrix.source_branch }}/src/vphysics_jolt
         submodules: recursive
 
-    - name: Build
+    - name: Build GCC x86
       working-directory: ${{ matrix.source_branch }}/src
       run: |
         chmod +x createjoltprojects.sh
         chmod +x devtools/bin/vpc_linux
         chmod +x devtools/bin/vpc
         chmod +x devtools/gendbg.sh
-
-        ./createjoltprojects.sh
-
-        if [ "${{ matrix.arch }}" = "x86" ]; then
-          make -f jolt.mak -j $(nproc) CFLAGS="-m32" CXXFLAGS="-m32" LDFLAGS="-m32"
-        else
-          make -f jolt.mak -j $(nproc) CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64"
-        fi
+        ./createjoltprojects.sh 
+        make -f jolt.mak -j $(nproc)
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: vphysics_jolt_${{ matrix.source_branch }}_${{ matrix.arch }}_linux
+        name: vphysics_jolt_${{ matrix.source_branch }}_linux32
         path: ${{ matrix.source_branch }}/game
         if-no-files-found: error
